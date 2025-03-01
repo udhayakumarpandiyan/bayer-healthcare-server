@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema({
   mobile: { type: String, required: false },
   goals: { type: Array, default: [] },
   reminders: { type: Array, default: [] },
-  role: {type: Number, default: 0} //0 and 1 
+  role: {type: Number, required: true, default: 0} // 0 - Patient and 1 - Healthcare provider
 });
 
 userSchema.set('toJSON', {
