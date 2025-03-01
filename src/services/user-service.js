@@ -55,6 +55,7 @@ async function register(userParam) {
             user.hash = bcrypt.hashSync(userParam.password, 10);
         }
         await user.save();
+        return { success: true, message: "User registered successfully" }
     }
     else {
         return { success: false, message: `${userParam.email} already exists , Please try with different email id .`}
