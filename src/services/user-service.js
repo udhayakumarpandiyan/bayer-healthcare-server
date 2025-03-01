@@ -7,6 +7,7 @@ const Users = db.Users;
 
 async function register(userParam) {
     const existingUser = await Users.findOne({ email: userParam.email });
+    
     if (existingUser === null) {
         try {
             const user = new User(userParam);
@@ -15,14 +16,14 @@ async function register(userParam) {
             }
             await user.save();
         } catch(error) {
-            res.status(500).json({ error: "Internal Server Error" });
+            return { sucess: false, message: "Internal Server Error"};
         }
     } else {
-        return res.status(409).json({ error: 'User already exists' });
+        return { sucess: false, message: "User Already Exists"};
     }
 }
 
-async function login({ email, password }) {
+async function login({ email, password }, res) {
     try{
         const user = await Users.findOne({ email });
         if(!user) return res.status(404).json({ error: 'Invalid credentials' });
@@ -48,7 +49,7 @@ async function login({ email, password }) {
             };
         }
     } catch(error){
-        res.status(500).json({ error: "Internal Server Error" });
+        return { sucess: false, message: "Internal Server Error"};
     }
 }
 
@@ -62,7 +63,7 @@ async function logout(req, res) {
         });
         return { message: 'Logout successful' };
     } catch (err) {
-        res.status(500).json({ error: "Internal Server Error" });
+        return { sucess: false, message: "Internal Server Error"};
     }
 }
 
