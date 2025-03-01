@@ -47,7 +47,7 @@ async function getAll() {
 async function getById(id) {
     return await User.findById(id);
 }
-async function create(userParam) {
+async function register(userParam) {
     const existingUser = await User.findOne({ email: userParam.email });
     if (existingUser === null) {
         const user = new User(userParam);
@@ -88,5 +88,6 @@ module.exports = {
     logout,
     getAll,
     getById,
-    create,
-ster,
+    register,
+    update,
+}
