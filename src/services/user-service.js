@@ -3,56 +3,26 @@ const bcrypt = require('bcryptjs');
 
 const db = require('../helpers/db');
 
-const Users = db.Users;
+const User = db.User;
 
-async function register(userParam) {
-    const existingUser = await Users.findOne({ email: userParam.email });
-    
-    if (existingUser === null) {
-        try {
-            const user = new User(userParam);
-            if (userParam.password) {
-                user.hash = bcrypt.hashSync(userParam.password, 10);
-            }
-            await user.save();
-        } catch(error) {
-            return { sucess: false, message: "Internal Server Error"};
+async function login({ email, password }) {
+    const user = await User.findOne({ email });
+    if (user && bcrypt.compareSync(password, user.hash)) {
+        let jwtSecretKey = process.env.JWT_SECRET_KEY;
+        let data = {
+            time: Date(),
+            userId: email,
         }
-    } else {
-        return { sucess: false, message: "User Already Exists"};
+        const token = jwt.sign(data, jwtSecretKey);
+        return {
+            ...user.toJSON(),
+            token
+        };
+    }
+    else {
+        return 'Authentitcation Failed';
     }
 }
-
-async function login({ email, password }, res) {
-    try{
-        const user = await Users.findOne({ email });
-        if(!user) return res.status(404).json({ error: 'Invalid credentials' });
-
-        if (user && bcrypt.compareSync(password, user.hash)) {
-            let jwtSecretKey = process.env.JWT_SECRET_KEY;
-            let data = {
-                time: Date(),
-                userId: email,
-            }
-            const token = jwt.sign(data, jwtSecretKey, { expiresIn: 7 * 24 * 60 * 60 }); // 7 days expiry
-    
-            // Set token in HTTP-Only cookie
-            res.cookie('token', token, {
-                httpOnly: true,
-                secure: process.env.NODE_ENV === 'production', // Secure in production
-                sameSite: 'strict',
-                maxAge: 7 * 24 * 60 * 60 // 7 days expiry
-            });
-    
-            return {
-                ...user.toJSON(),
-            };
-        }
-    } catch(error){
-        return { sucess: false, message: "Internal Server Error"};
-    }
-}
-
 async function logout(req, res) {
     try {
         res.clearCookie('token', {
@@ -63,20 +33,36 @@ async function logout(req, res) {
         });
         return { message: 'Logout successful' };
     } catch (err) {
-        return { sucess: false, message: "Internal Server Error"};
+        return {
+            status: 'error',
+            message: 'Internal Server Error',
+        };
     }
 }
 
 async function getAll() {
-    return await Users.find();
+    return await User.find();
 }
 
 async function getById(id) {
-    return await Users.findById(id);
+    return await User.findById(id);
+}
+async function create(userParam) {
+    const existingUser = await User.findOne({ email: userParam.email });
+    if (existingUser === null) {
+        const user = new User(userParam);
+        if (userParam.password) {
+            user.hash = bcrypt.hashSync(userParam.password, 10);
+        }
+        await user.save();
+    }
+    else {
+        return { success: false, message: `${userParam.email} already exists , Please try with different email id .`}
+    }
 }
 
 async function update(id, userParam) {
-    const user = await Users.findById(id);
+    const user = await User.findById(id);
     // validate
     if (!user) throw 'User not found';
     if (user.username !== userParam.username && await User.findOne({ username: userParam.username })) {
@@ -92,15 +78,15 @@ async function update(id, userParam) {
 }
 
 async function _delete(id) {
-    await Users.findByIdAndRemove(id);
+    await User.findByIdAndRemove(id);
 }
+
+
 
 module.exports = {
     login,
     logout,
     getAll,
     getById,
-    register,
-    update,
-    delete: _delete
-};
+    create,
+ster,
